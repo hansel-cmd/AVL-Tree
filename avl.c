@@ -10,10 +10,15 @@ typedef struct cell {
 
 typedef nodePtr BSTree;
 
+void display()
+{
+    printf("%-5s | %-5s\n", "data", "height");
+}
+
 void preorder(BSTree T)
 {
     if (T != NULL) {
-        printf("%d | %d\n", T->data, T->height);
+        printf("%-5d | %-5d\n", T->data, T->height);
         preorder(T->left);
         preorder(T->right);
     }
@@ -163,6 +168,88 @@ void populate(BSTree *T, int arr[], int size)
     }
 }
 
+int getPredecessor(BSTree *trav)
+{
+    if ((*trav)->right == NULL) {
+        BSTree temp = *trav;
+        *trav = temp->left;
+        int retval = temp->data;
+        free(temp);
+        return retval;
+    }
+
+    getPredecessor(&(*trav)->right);
+}
+
+int getSuccessor(BSTree *trav)
+{
+    if ((*trav)->left == NULL) {
+        BSTree temp = *trav;
+        *trav = temp->right;
+        int retval = temp->data;
+        free(temp);
+        return retval;
+    }
+
+    getSuccessor(&(*trav)->left);
+}
+
+void delete(BSTree *T, int data)
+{
+    if (*T == NULL)
+        return;
+    
+    if ((*T)->data == data) {
+        BSTree temp = *T;
+        if (temp->left == NULL) {
+            *T = temp->right;
+            free(temp);
+        } else if (temp->right == NULL) {
+            *T = temp->left;
+            free(temp);
+        } else {
+            temp->data = getPredecessor(&(temp)->left);
+        }
+        return;
+    }
+
+    (*T)->data < data ? delete(&(*T)->right, data) : delete(&(*T)->left, data);
+
+    int left_node_height = height((*T)->left);
+    int right_node_height = height((*T)->right);
+    (*T)->height = max(left_node_height, right_node_height) + 1;
+
+    int bf = getBalance(*T);
+
+    // left and left
+    if (bf > 1 && getBalance((*T)->left) >= 0) {
+        rightRotation(T);
+        return;
+    }
+
+    // right and right
+    if (bf < -1 && getBalance((*T)->right) <= 0) {
+        leftRotation(T);
+        return;
+    }
+
+    // left and right
+    if (bf > 1 && getBalance((*T)->left) < 0) {
+        leftRotation(&(*T)->left);
+        rightRotation(T);
+        return;
+    }
+    
+    // right and left
+    if (bf < - 1 && getBalance((*T)->right > 0)) {
+        rightRotation(&(*T)->right);
+        leftRotation(T);
+        return;
+    }
+
+}
+
+
 int main ()
 {
     BSTree T;
@@ -174,7 +261,7 @@ int main ()
     // int arr[] = {30, 10, 20};
     // int arr[] = {10, 30, 20};
     
-    int arr[] = {50, 60, 70, 80, 10, 20, 30, 40, 45};
+    // int arr[] = {50, 60, 70, 80, 10, 20, 30, 40, 45};
     /**
      *
      *                      60
@@ -190,8 +277,46 @@ int main ()
      *
      */
 
-    populate(&T, arr, 9);
+
+    int arr[] = {50, 45, 55, 43, 47, 53, 60, 40, 52, 54};
+    /**
+     *
+     *                         50
+     *                     /        \
+     *                    45         55
+     *                  /   \      /   \
+     *                43     47   53   60
+     *               /           /  \     
+     *              40         52    54 
+     * 
+     * expected output:
+     *          50 45 43 40 47 55 53 52 54 60
+     *
+     */
+
+
+    populate(&T, arr, 10);
+    display();
     preorder(T);
+
+    delete(&T, 47);
+    /**
+     *
+     *                         50
+     *                     /        \
+     *                    43         55
+     *                  /   \      /   \
+     *                40    45    53   60
+     *                          /  \     
+     *                        52    54 
+     * 
+     * expected output:
+     *          50 43 40 45 55 53 52 54 60
+     *
+     */
+    display();
+    preorder(T);
+
 
     return 0;
 }
